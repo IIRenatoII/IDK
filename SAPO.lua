@@ -140,6 +140,16 @@ if gameName == "Sailor Piece" then
     })
 
     -- === CONTENIDO DE LA PESTAÑA MAIN ===
+    
+    -- NUEVO: Sección de Información y Versión
+    local InfoSection = Tabs.Main:AddSection("Información")
+    
+    Tabs.Main:AddParagraph({
+        Title = "Versión del Script",
+        Content = "v1.1"
+    })
+
+    -- Sección de farmeo
     local MainSection = Tabs.Main:AddSection("Auto Farm")
     
     Tabs.Main:AddToggle("AutoFarmSailor", {
