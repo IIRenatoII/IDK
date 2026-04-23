@@ -162,10 +162,11 @@ if gameName == "Sailor Piece" then
     })
 
     local killAuraActive = false
-    local auraRadius = 35 -- Lo subimos a 35 ya que teletransportaremos la hitbox
+    local auraRadius = 35 -- Distancia a la que detecta enemigos
+    local VirtualInputManager = game:GetService("VirtualInputManager")
 
     Tabs.Main:AddToggle("KillAura", {
-        Title = "Kill aura V2",
+        Title = "Kill Aura V3",
         Default = false,
         Callback = function(state)
             killAuraActive = state
@@ -173,7 +174,7 @@ if gameName == "Sailor Piece" then
             if state then
                 task.spawn(function()
                     while killAuraActive do
-                        task.wait(0.05) -- Velocidad súper rápida
+                        task.wait(0.1) -- Velocidad del auto-ataque
                         
                         pcall(function()
                             local character = Players.LocalPlayer.Character
@@ -183,54 +184,65 @@ if gameName == "Sailor Piece" then
                             local tool = character and character:FindFirstChildOfClass("Tool")
                             
                             if myRoot and humanoid and npcsFolder and tool then
+                                local targetFound = false
                                 
-                                local closestEnemy = nil
-                                local shortestDistance = auraRadius
-                                
-                                -- 1. Encontrar al NPC más cercano
+                                -- 1. Buscamos enemigos en la carpeta
                                 for _, enemy in pairs(npcsFolder:GetChildren()) do
-                                    if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 and enemy:FindFirstChild("HumanoidRootPart") then
-                                        local distance = (myRoot.Position - enemy.HumanoidRootPart.Position).Magnitude
-                                        if distance <= shortestDistance then
-                                            shortestDistance = distance
-                                            closestEnemy = enemy
+                                    if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+                                        local enemyRoot = enemy:FindFirstChild("HumanoidRootPart")
+                                        
+                                        if enemyRoot then
+                                            local distance = (myRoot.Position - enemyRoot.Position).Magnitude
+                                            
+                                            -- Si está en el radio, aplicamos la magia de tu Imagen 1
+                                            if distance <= auraRadius then
+                                                targetFound = true
+                                                
+                                                -- HITBOX EXPANDER: Hacemos al NPC gigante y verde
+                                                enemyRoot.Size = Vector3.new(50, 50, 50)
+                                                enemyRoot.Transparency = 0.5
+                                                enemyRoot.Color = Color3.fromRGB(0, 255, 0)
+                                                enemyRoot.CanCollide = false
+                                            else
+                                                -- Si se aleja, lo devolvemos a la normalidad para evitar lag
+                                                if enemyRoot.Size.X > 5 then
+                                                    enemyRoot.Size = Vector3.new(2, 2, 1)
+                                                    enemyRoot.Transparency = 1
+                                                end
+                                            end
                                         end
                                     end
                                 end
                                 
-                                if closestEnemy then
-                                    -- 2. Activar el arma para engañar al juego y que cree la Hitbox
-                                    tool:Activate()
-                                    
-                                    -- 3. CANCELAR ANIMACIONES: Esto congela a tu personaje para que parezca un aura
+                                -- 2. Si hay enemigos modificados cerca, atacamos
+                                if targetFound then
+                                    -- Congelamos TUS animaciones para el efecto "Aura"
                                     for _, anim in pairs(humanoid:GetPlayingAnimationTracks()) do
                                         anim:Stop()
                                     end
                                     
-                                    -- 4. HITBOX TELEPORT (La magia de tus imágenes)
-                                    -- Buscamos cualquier parte invisible/sin colisión que se haya creado en tu personaje
-                                    for _, obj in pairs(character:GetChildren()) do
-                                        if obj:IsA("BasePart") and not obj.CanCollide and obj.Transparency > 0 then
-                                            
-                                            -- Teletransportamos la caja de daño al centro del NPC
-                                            obj.CFrame = closestEnemy.HumanoidRootPart.CFrame
-                                            
-                                            -- Efecto visual: La hacemos verde brillante para que la veas trabajar
-                                            obj.Size = Vector3.new(10, 10, 10)
-                                            obj.Color = Color3.fromRGB(0, 255, 0)
-                                            obj.Transparency = 0.5
-                                        end
-                                    end
-
-                                    -- 5. PLAN B: EXPANDIR AL ENEMIGO (Hitbox Expander)
-                                    -- Por si el juego borra la caja verde muy rápido, hacemos que el NPC sea "gigante" 
-                                    -- de forma invisible para que toque tu espada de todas formas.
-                                    closestEnemy.HumanoidRootPart.Size = Vector3.new(25, 25, 25)
-                                    closestEnemy.HumanoidRootPart.CanCollide = false
-                                    closestEnemy.HumanoidRootPart.Transparency = 1 
+                                    -- Activamos el arma y forzamos el clic de hardware
+                                    tool:Activate()
+                                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+                                    task.wait(0.05)
+                                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
                                 end
                             end
                         end)
+                    end
+                end)
+            else
+                -- Limpieza: Cuando apagas el aura, devolvemos a los NPCs a su tamaño normal
+                pcall(function()
+                    local npcsFolder = workspace:FindFirstChild("NPCs")
+                    if npcsFolder then
+                        for _, enemy in pairs(npcsFolder:GetChildren()) do
+                            local enemyRoot = enemy:FindFirstChild("HumanoidRootPart")
+                            if enemyRoot and enemyRoot.Size.X > 5 then
+                                enemyRoot.Size = Vector3.new(2, 2, 1)
+                                enemyRoot.Transparency = 1
+                            end
+                        end
                     end
                 end)
             end
