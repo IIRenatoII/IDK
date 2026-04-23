@@ -66,7 +66,7 @@ if gameName == "Sailor Piece" then
     local antiAfkConnection
     local autoRejoinActivo = false
     
-    -- === AJUSTES DE SAILOR PIECE (Se pondrán AL INICIO de Settings) ===
+    -- === AJUSTES DE SAILOR PIECE ===
     Tabs.Settings:AddSection("Game Features")
     
     Tabs.Settings:AddToggle("AutoRejoin", {
@@ -77,7 +77,7 @@ if gameName == "Sailor Piece" then
         end
     })
 
-    -- 1. MOTOR PRINCIPAL DE RECONEXIÓN (100% a prueba de fallos, ignora ejecutores)
+    -- MOTOR PRINCIPAL DE RECONEXIÓN
     GuiService.ErrorMessageChanged:Connect(function(errMessage)
         if autoRejoinActivo and errMessage and errMessage ~= "" then
             task.wait(3.5)
@@ -91,7 +91,7 @@ if gameName == "Sailor Piece" then
         end
     end)
 
-    -- 2. MOTOR VISUAL PARA EL CARTEL (Con límite de tiempo anti-congelamiento)
+    -- MOTOR VISUAL PARA EL CARTEL
     task.spawn(function()
         pcall(function()
             local CoreGui = game:GetService("CoreGui")
@@ -158,97 +158,102 @@ if gameName == "Sailor Piece" then
     
     Tabs.Main:AddParagraph({
         Title = "Versión del Script",
-        Content = "v1.1"
+        Content = "v1.2"
     })
 
-    local killAuraActive = false
-    local auraRadius = 35 -- Distancia a la que detecta enemigos
-    local VirtualInputManager = game:GetService("VirtualInputManager")
-
-    Tabs.Main:AddToggle("KillAura", {
-        Title = "Kill Aura V3",
+    local MainSection = Tabs.Main:AddSection("Auto Farm")
+    
+    -- Variables para el Auto Reset
+    local autoResetEnabled = false
+    local maxResetTime = 20
+    local currentResetTime = 20
+    local lastPosition = nil
+    
+    local AutoResetToggle = Tabs.Main:AddToggle("AutoReset", {
+        Title = "Auto Reset (Anti-Stuck)",
         Default = false,
         Callback = function(state)
-            killAuraActive = state
+            autoResetEnabled = state
             
             if state then
+                currentResetTime = maxResetTime
+                lastPosition = nil
+                
                 task.spawn(function()
-                    while killAuraActive do
-                        task.wait(0.1) -- Velocidad del auto-ataque
-                        
+                    while autoResetEnabled do
+                        task.wait(1)
                         pcall(function()
                             local character = Players.LocalPlayer.Character
                             local humanoid = character and character:FindFirstChild("Humanoid")
-                            local myRoot = character and character:FindFirstChild("HumanoidRootPart")
-                            local npcsFolder = workspace:FindFirstChild("NPCs")
-                            local tool = character and character:FindFirstChildOfClass("Tool")
+                            local rootPart = character and character:FindFirstChild("HumanoidRootPart")
                             
-                            if myRoot and humanoid and npcsFolder and tool then
-                                local targetFound = false
+                            -- Verificamos si el jugador existe, tiene cuerpo y está vivo
+                            if character and humanoid and rootPart and humanoid.Health > 0 then
                                 
-                                -- 1. Buscamos enemigos en la carpeta
-                                for _, enemy in pairs(npcsFolder:GetChildren()) do
-                                    if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
-                                        local enemyRoot = enemy:FindFirstChild("HumanoidRootPart")
-                                        
-                                        if enemyRoot then
-                                            local distance = (myRoot.Position - enemyRoot.Position).Magnitude
-                                            
-                                            -- Si está en el radio, aplicamos la magia de tu Imagen 1
-                                            if distance <= auraRadius then
-                                                targetFound = true
-                                                
-                                                -- HITBOX EXPANDER: Hacemos al NPC gigante y verde
-                                                enemyRoot.Size = Vector3.new(50, 50, 50)
-                                                enemyRoot.Transparency = 0.5
-                                                enemyRoot.Color = Color3.fromRGB(0, 255, 0)
-                                                enemyRoot.CanCollide = false
-                                            else
-                                                -- Si se aleja, lo devolvemos a la normalidad para evitar lag
-                                                if enemyRoot.Size.X > 5 then
-                                                    enemyRoot.Size = Vector3.new(2, 2, 1)
-                                                    enemyRoot.Transparency = 1
-                                                end
-                                            end
-                                        end
-                                    end
+                                if not lastPosition then
+                                    lastPosition = rootPart.Position
                                 end
                                 
-                                -- 2. Si hay enemigos modificados cerca, atacamos
-                                if targetFound then
-                                    -- Congelamos TUS animaciones para el efecto "Aura"
-                                    for _, anim in pairs(humanoid:GetPlayingAnimationTracks()) do
-                                        anim:Stop()
-                                    end
-                                    
-                                    -- Activamos el arma y forzamos el clic de hardware
-                                    tool:Activate()
-                                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
-                                    task.wait(0.05)
-                                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+                                local distance = (rootPart.Position - lastPosition).Magnitude
+                                
+                                if distance > 5 then
+                                    -- Si se movió fuera de los 5 studs, reiniciamos el tiempo
+                                    currentResetTime = maxResetTime
+                                    lastPosition = rootPart.Position
+                                else
+                                    -- Si sigue quieto, restamos 1 segundo
+                                    currentResetTime = currentResetTime - 1
                                 end
+                                
+                                -- Actualizamos la UI en tiempo real
+                                Options.CountdownDisplay:SetDesc("Tiempo restante: " .. tostring(currentResetTime) .. "s")
+                                
+                                -- Ejecutamos el Reset si el tiempo llega a 0
+                                if currentResetTime <= 0 then
+                                    Options.CountdownDisplay:SetDesc("Reseteando personaje...")
+                                    humanoid.Health = 0 -- Mata al personaje para resetearlo
+                                    currentResetTime = maxResetTime
+                                    lastPosition = nil
+                                end
+                            else
+                                -- Si el personaje está muerto o cargando, pausamos el contador
+                                currentResetTime = maxResetTime
+                                lastPosition = nil
+                                Options.CountdownDisplay:SetDesc("Esperando a reaparecer...")
                             end
                         end)
                     end
+                    -- Texto cuando se apaga el toggle
+                    Options.CountdownDisplay:SetDesc("Apagado")
                 end)
             else
-                -- Limpieza: Cuando apagas el aura, devolvemos a los NPCs a su tamaño normal
-                pcall(function()
-                    local npcsFolder = workspace:FindFirstChild("NPCs")
-                    if npcsFolder then
-                        for _, enemy in pairs(npcsFolder:GetChildren()) do
-                            local enemyRoot = enemy:FindFirstChild("HumanoidRootPart")
-                            if enemyRoot and enemyRoot.Size.X > 5 then
-                                enemyRoot.Size = Vector3.new(2, 2, 1)
-                                enemyRoot.Transparency = 1
-                            end
-                        end
-                    end
-                end)
+                Options.CountdownDisplay:SetDesc("Apagado")
             end
         end
     })
     
+    -- Párrafo que mostrará la cuenta regresiva en vivo
+    Tabs.Main:AddParagraph("CountdownDisplay", {
+        Title = "Estado del Auto Reset",
+        Content = "Apagado"
+    })
+    
+    -- Slider para elegir el tiempo dinámico
+    Tabs.Main:AddSlider("AutoResetTime", {
+        Title = "Tiempo para Reset",
+        Description = "Segundos sin moverse para ejecutar el reset",
+        Default = 20,
+        Min = 10,
+        Max = 120,
+        Rounding = 0,
+        Callback = function(Value)
+            maxResetTime = Value
+            if currentResetTime > maxResetTime then
+                currentResetTime = maxResetTime
+            end
+        end
+    })
+
     Tabs.Main:AddToggle("InstaKillBosses", {
         Title = "Insta Kill (Bosses)",
         Default = false,
@@ -264,7 +269,6 @@ elseif gameName == "Pixel Blade" then
         Title = "Auto Swing Weapon", 
         Default = false,
         Callback = function(state)
-            print("Auto Swing está: ", state)
         end
     })
     
