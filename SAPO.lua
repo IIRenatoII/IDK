@@ -11,7 +11,7 @@ local supportedGames = {
 local gameName = supportedGames[placeId]
 
 if not gameName then
-    warn("SAPO: Juego no soportado. Script detenido.")
+    warn("SAPO Hub: Juego no soportado. Script detenido.")
     return 
 end
 
@@ -27,7 +27,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 -- ==========================================
 local Window = Fluent:CreateWindow({
     Title = "SAPO | " .. gameName,
-    SubTitle = "",
+    SubTitle = "by sapo",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
     Theme = "AMOLED",
@@ -43,8 +43,6 @@ local Options = Fluent.Options
 -- ==========================================
 -- 4. CREACIÓN DE PESTAÑAS (ORDEN VISUAL)
 -- ==========================================
--- Las declaramos primero para que queden en el orden correcto en el menú
-
 if gameName == "Sailor Piece" then
     Tabs.Main = Window:AddTab({ Title = "Farm", Icon = "sword" })
 elseif gameName == "Pixel Blade" then
@@ -52,9 +50,7 @@ elseif gameName == "Pixel Blade" then
     Tabs.Eggs = Window:AddTab({ Title = "Pets/Eggs", Icon = "box" })
 end
 
--- Settings siempre la creamos al final para que quede abajo en la lista
 Tabs.Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
-
 
 -- ==========================================
 -- 5. CONTENIDO ESPECÍFICO DE CADA JUEGO
@@ -64,15 +60,14 @@ if gameName == "Sailor Piece" then
 
     local VirtualUser = game:GetService("VirtualUser")
     local Players = game:GetService("Players")
-    local antiAfkConnection -- Guardamos la conexión para poder apagarla
-
+    local TeleportService = game:GetService("TeleportService")
+    local RobloxGUI = gethui and gethui() or game:GetService("CoreGui")
+    
+    local antiAfkConnection
+    local autoRejoinActivo = false
+    
     -- === AJUSTES DE SAILOR PIECE (Se pondrán AL INICIO de Settings) ===
     Tabs.Settings:AddSection("Game Features")
-    
-    local TeleportService = game:GetService("TeleportService")
-    -- Utilizamos gethui() por si tu ejecutor esconde la interfaz de Roblox
-    local RobloxGUI = gethui and gethui() or game:GetService("CoreGui")
-    local autoRejoinActivo = false
     
     Tabs.Settings:AddToggle("AutoRejoin", {
         Title = "Auto Rejoin if Kick", 
@@ -82,21 +77,20 @@ if gameName == "Sailor Piece" then
         end
     })
 
-    -- Envolvemos en pcall para evitar crasheos si el ejecutor tiene seguridad extrema
+    -- Lógica del Auto Rejoin (Blindada)
     pcall(function()
         local promptOverlay = RobloxGUI:WaitForChild("RobloxPromptGui"):WaitForChild("promptOverlay")
         
         promptOverlay.ChildAdded:Connect(function(child)
             if child.Name == "ErrorPrompt" and autoRejoinActivo then
                 
-                -- TRUCO VISUAL: Cambiamos el texto del cartel para confirmar que SAPO lo detectó
+                -- TRUCO VISUAL: Cambia el cartel de Roblox
                 pcall(function()
                     child.MessageArea.ErrorFrame.ErrorMessage.Text = "SAPO: Desconexión detectada. Reconectando al servidor en 3 segundos..."
                 end)
                 
                 task.wait(3)
                 
-                -- Intentamos reconectar al mismo servidor (JobId)
                 pcall(function()
                     if game.JobId ~= "" then
                         TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Players.LocalPlayer)
@@ -105,7 +99,6 @@ if gameName == "Sailor Piece" then
                     end
                 end)
                 
-                -- Plan B: Si falla porque es un server VIP muy estricto, forzamos un Teleport general 2 segundos después
                 task.wait(2)
                 pcall(function()
                     TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
@@ -113,7 +106,7 @@ if gameName == "Sailor Piece" then
             end
         end)
     end)
-    
+
     Tabs.Settings:AddToggle("AutoExecute", {
         Title = "Auto Execute", 
         Default = false,
@@ -122,37 +115,28 @@ if gameName == "Sailor Piece" then
                 local queueFunction = queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport)
                 
                 if queueFunction then
-                    -- Reemplaza el link de abajo por el link real de tu script SAPO
                     queueFunction([[
                         if not game:IsLoaded() then game.Loaded:Wait() end
                         task.wait(2)
-                        
-                        -- Aquí va el loadstring de tu script principal:
                         loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/IDK/refs/heads/main/SAPO.lua"))()
                     ]])
                 else
-                    Fluent:Notify({
-                        Title = "Error", 
-                        Content = "Tu ejecutor no soporta AutoExecute", 
-                        Duration = 5
-                    })
+                    Fluent:Notify({ Title = "Error", Content = "Tu ejecutor no soporta AutoExecute", Duration = 5 })
                 end
             end
         end
     })
-    
+
     Tabs.Settings:AddToggle("AntiAfk", {
         Title = "Anti-Afk", 
         Default = false,
         Callback = function(state)
             if state then
-                -- Cuando se activa, escuchamos si Roblox nos marca como ausentes
                 antiAfkConnection = Players.LocalPlayer.Idled:Connect(function()
                     VirtualUser:CaptureController()
-                    VirtualUser:ClickButton2(Vector2.new()) -- Hace un clic derecho virtual
+                    VirtualUser:ClickButton2(Vector2.new())
                 end)
             else
-                -- Si apagamos el toggle, desconectamos el Anti-Afk
                 if antiAfkConnection then
                     antiAfkConnection:Disconnect()
                     antiAfkConnection = nil
@@ -162,15 +146,13 @@ if gameName == "Sailor Piece" then
     })
 
     -- === CONTENIDO DE LA PESTAÑA MAIN ===
-    
-    -- NUEVO: Sección de Información y Versión
     local InfoSection = Tabs.Main:AddSection("Información")
     
     Tabs.Main:AddParagraph({
-        Title = "🐸 v1.1 🐸",
+        Title = "Versión del Script",
+        Content = "v1.1"
     })
 
-    -- Sección de farmeo
     local MainSection = Tabs.Main:AddSection("Auto Farm")
     
     Tabs.Main:AddToggle("AutoFarmSailor", {
@@ -187,7 +169,6 @@ if gameName == "Sailor Piece" then
     })
 
 elseif gameName == "Pixel Blade" then
-    -- === CONTENIDO DE PIXEL BLADE ===
     local MainSection = Tabs.Main:AddSection("Combat")
 
     Tabs.Main:AddToggle("AutoSwing", {
@@ -207,8 +188,6 @@ end
 -- ==========================================
 -- 6. CONFIGURACIÓN DE UI DE GUARDADO
 -- ==========================================
--- Como esto se llama al final, se construirá justo DEBAJO de tus Toggles de Sailor Piece.
-
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
 SaveManager:IgnoreThemeSettings()
