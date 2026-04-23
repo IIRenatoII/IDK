@@ -62,8 +62,7 @@ if gameName == "Sailor Piece" then
     local VirtualUser = game:GetService("VirtualUser")
     local Players = game:GetService("Players")
     local TeleportService = game:GetService("TeleportService")
-    -- Solución al Infinite Yield: Usamos estrictamente CoreGui para detectar los carteles nativos de Roblox
-    local CoreGui = game:GetService("CoreGui") 
+    local GuiService = game:GetService("GuiService")
     
     local antiAfkConnection
     local autoRejoinActivo = false
@@ -79,35 +78,43 @@ if gameName == "Sailor Piece" then
         end
     })
 
-    -- Lógica del Auto Rejoin (Corregida)
-    task.spawn(function()
-        pcall(function()
-            local promptOverlay = CoreGui:WaitForChild("RobloxPromptGui"):WaitForChild("promptOverlay")
-            
-            promptOverlay.ChildAdded:Connect(function(child)
-                if child.Name == "ErrorPrompt" and autoRejoinActivo then
-                    
-                    -- TRUCO VISUAL: Cambia el cartel de Roblox
-                    pcall(function()
-                        child.MessageArea.ErrorFrame.ErrorMessage.Text = "SAPO Hub: Desconexión detectada. Reconectando al servidor en 3 segundos..."
-                    end)
-                    
-                    task.wait(3)
-                    
-                    pcall(function()
-                        if game.JobId ~= "" then
-                            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Players.LocalPlayer)
-                        else
-                            TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
-                        end
-                    end)
-                    
-                    task.wait(2)
-                    pcall(function()
-                        TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
-                    end)
+    -- 1. MOTOR PRINCIPAL DE RECONEXIÓN (100% a prueba de fallos, ignora ejecutores)
+    GuiService.ErrorMessageChanged:Connect(function(errMessage)
+        if autoRejoinActivo and errMessage and errMessage ~= "" then
+            task.wait(3.5)
+            pcall(function()
+                if game.JobId ~= "" then
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Players.LocalPlayer)
+                else
+                    TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
                 end
             end)
+        end
+    end)
+
+    -- 2. MOTOR VISUAL PARA EL CARTEL (Con límite de tiempo anti-congelamiento)
+    task.spawn(function()
+        pcall(function()
+            local CoreGui = game:GetService("CoreGui")
+            -- Si el ejecutor te manda a la carpeta secreta HUI, buscamos el CoreGui real
+            if CoreGui.Name ~= "CoreGui" and CoreGui.Parent and CoreGui.Parent.Name == "CoreGui" then
+                CoreGui = CoreGui.Parent
+            end
+
+            -- Se agregó un límite estricto de 2 segundos para evitar el Infinite Yield
+            local robloxPrompt = CoreGui:WaitForChild("RobloxPromptGui", 2)
+            if robloxPrompt then
+                local promptOverlay = robloxPrompt:WaitForChild("promptOverlay", 2)
+                if promptOverlay then
+                    promptOverlay.ChildAdded:Connect(function(child)
+                        if child.Name == "ErrorPrompt" and autoRejoinActivo then
+                            pcall(function()
+                                child.MessageArea.ErrorFrame.ErrorMessage.Text = "SAPO Hub: Desconexión detectada. Reconectando al servidor..."
+                            end)
+                        end
+                    end)
+                end
+            end
         end)
     end)
 
