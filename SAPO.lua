@@ -162,11 +162,10 @@ if gameName == "Sailor Piece" then
     })
 
     local killAuraActive = false
-    local auraRadius = 25
-    local VirtualInputManager = game:GetService("VirtualInputManager")
+    local auraRadius = 35 -- Lo subimos a 35 ya que teletransportaremos la hitbox
 
     Tabs.Main:AddToggle("KillAura", {
-        Title = "Kill aura",
+        Title = "Kill aura V2",
         Default = false,
         Callback = function(state)
             killAuraActive = state
@@ -174,49 +173,61 @@ if gameName == "Sailor Piece" then
             if state then
                 task.spawn(function()
                     while killAuraActive do
-                        task.wait(0.1) -- Velocidad del combo (0.1s es perfecto)
+                        task.wait(0.05) -- Velocidad súper rápida
                         
                         pcall(function()
                             local character = Players.LocalPlayer.Character
+                            local humanoid = character and character:FindFirstChild("Humanoid")
+                            local myRoot = character and character:FindFirstChild("HumanoidRootPart")
                             local npcsFolder = workspace:FindFirstChild("NPCs")
+                            local tool = character and character:FindFirstChildOfClass("Tool")
                             
-                            if character and character:FindFirstChild("HumanoidRootPart") and npcsFolder then
-                                local myRoot = character.HumanoidRootPart
-                                local myPos = myRoot.Position
-                                local tool = character:FindFirstChildOfClass("Tool")
+                            if myRoot and humanoid and npcsFolder and tool then
                                 
                                 local closestEnemy = nil
                                 local shortestDistance = auraRadius
                                 
-                                -- 1. Buscamos al enemigo MÁS CERCANO dentro del radio
+                                -- 1. Encontrar al NPC más cercano
                                 for _, enemy in pairs(npcsFolder:GetChildren()) do
-                                    if enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("HumanoidRootPart") then
-                                        if enemy.Humanoid.Health > 0 then
-                                            local distance = (myPos - enemy.HumanoidRootPart.Position).Magnitude
-                                            
-                                            if distance <= shortestDistance then
-                                                shortestDistance = distance
-                                                closestEnemy = enemy
-                                            end
+                                    if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 and enemy:FindFirstChild("HumanoidRootPart") then
+                                        local distance = (myRoot.Position - enemy.HumanoidRootPart.Position).Magnitude
+                                        if distance <= shortestDistance then
+                                            shortestDistance = distance
+                                            closestEnemy = enemy
                                         end
                                     end
                                 end
                                 
-                                -- 2. Si encontramos a alguien cerca y tenemos un arma equipada...
-                                if closestEnemy and tool then
-                                    local enemyPos = closestEnemy.HumanoidRootPart.Position
-                                    
-                                    -- Miramos fijamente al objetivo
-                                    myRoot.CFrame = CFrame.lookAt(myPos, Vector3.new(enemyPos.X, myPos.Y, enemyPos.Z))
-                                    
-                                    -- Activación normal
+                                if closestEnemy then
+                                    -- 2. Activar el arma para engañar al juego y que cree la Hitbox
                                     tool:Activate()
                                     
-                                    -- Simulación de hardware (Clic izquierdo real de PC)
-                                    -- Esto fuerza al juego a registrar el golpe sí o sí
-                                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
-                                    task.wait(0.05) -- Mantenemos el clic 0.05 segundos para que registre
-                                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+                                    -- 3. CANCELAR ANIMACIONES: Esto congela a tu personaje para que parezca un aura
+                                    for _, anim in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                        anim:Stop()
+                                    end
+                                    
+                                    -- 4. HITBOX TELEPORT (La magia de tus imágenes)
+                                    -- Buscamos cualquier parte invisible/sin colisión que se haya creado en tu personaje
+                                    for _, obj in pairs(character:GetChildren()) do
+                                        if obj:IsA("BasePart") and not obj.CanCollide and obj.Transparency > 0 then
+                                            
+                                            -- Teletransportamos la caja de daño al centro del NPC
+                                            obj.CFrame = closestEnemy.HumanoidRootPart.CFrame
+                                            
+                                            -- Efecto visual: La hacemos verde brillante para que la veas trabajar
+                                            obj.Size = Vector3.new(10, 10, 10)
+                                            obj.Color = Color3.fromRGB(0, 255, 0)
+                                            obj.Transparency = 0.5
+                                        end
+                                    end
+
+                                    -- 5. PLAN B: EXPANDIR AL ENEMIGO (Hitbox Expander)
+                                    -- Por si el juego borra la caja verde muy rápido, hacemos que el NPC sea "gigante" 
+                                    -- de forma invisible para que toque tu espada de todas formas.
+                                    closestEnemy.HumanoidRootPart.Size = Vector3.new(25, 25, 25)
+                                    closestEnemy.HumanoidRootPart.CanCollide = false
+                                    closestEnemy.HumanoidRootPart.Transparency = 1 
                                 end
                             end
                         end)
