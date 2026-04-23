@@ -161,13 +161,59 @@ if gameName == "Sailor Piece" then
         Content = "v1.1"
     })
 
-    local MainSection = Tabs.Main:AddSection("Auto Farm")
-    
+    local killAuraActive = false
+    local auraRadius = 100 -- Distancia máxima de ataque (Studs)
+
     Tabs.Main:AddToggle("KillAura", {
         Title = "Kill aura",
         Default = false,
         Callback = function(state)
-            print("Kill aura está: ", state)
+            killAuraActive = state
+            
+            if state then
+                task.spawn(function()
+                    while killAuraActive do
+                        task.wait(0.1) -- Velocidad a la que hace los "clics" de ataque
+                        
+                        -- Usamos pcall para evitar que el bucle se rompa si mueres o el juego se lagea
+                        pcall(function()
+                            local character = Players.LocalPlayer.Character
+                            local npcsFolder = workspace:FindFirstChild("NPCs")
+                            
+                            -- Verificamos que tu personaje y la carpeta de NPCs existan
+                            if character and character:FindFirstChild("HumanoidRootPart") and npcsFolder then
+                                local myPos = character.HumanoidRootPart.Position
+                                
+                                -- Revisamos uno por uno a los monstruos dentro de la carpeta NPCs
+                                for _, enemy in pairs(npcsFolder:GetChildren()) do
+                                    
+                                    -- Comprobamos que el enemigo tenga cuerpo y vida
+                                    if enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("HumanoidRootPart") then
+                                        if enemy.Humanoid.Health > 0 then
+                                            
+                                            local enemyPos = enemy.HumanoidRootPart.Position
+                                            local distance = (myPos - enemyPos).Magnitude
+                                            
+                                            -- Si la distancia es menor o igual a nuestro radio (25 studs)
+                                            if distance <= auraRadius then
+                                                
+                                                -- Buscamos si tienes un arma (Tool) equipada en la mano y la activamos
+                                                local tool = character:FindFirstChildOfClass("Tool")
+                                                if tool then
+                                                    tool:Activate()
+                                                end
+                                                
+                                                -- (Opcional) Forzamos a tu personaje a mirar hacia el enemigo
+                                                -- character:SetPrimaryPartCFrame(CFrame.lookAt(myPos, Vector3.new(enemyPos.X, myPos.Y, enemyPos.Z)))
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end)
+                    end
+                end)
+            end
         end
     })
 
