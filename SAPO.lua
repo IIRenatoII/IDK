@@ -18,9 +18,9 @@ end
 -- ==========================================
 -- 2. CARGA DE LIBRERÍAS
 -- ==========================================
-local Fluent = loadstring(game:HttpGet("https://github.com/IIRenatoII/IDK/releases/download/SAPO/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/IDK/refs/heads/main/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/IDK/refs/heads/main/Addons/InterfaceManager.lua"))()
+local Fluent = loadstring(game:HttpGet("https://github.com/IIRenatoII/SAPO/releases/download/SAPO/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/SAPO/refs/heads/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/SAPO/refs/heads/master/Addons/InterfaceManager.lua"))()
 
 -- ==========================================
 -- 3. CREACIÓN DE LA VENTANA PRINCIPAL
@@ -62,7 +62,8 @@ if gameName == "Sailor Piece" then
     local VirtualUser = game:GetService("VirtualUser")
     local Players = game:GetService("Players")
     local TeleportService = game:GetService("TeleportService")
-    local RobloxGUI = gethui and gethui() or game:GetService("CoreGui")
+    -- Solución al Infinite Yield: Usamos estrictamente CoreGui para detectar los carteles nativos de Roblox
+    local CoreGui = game:GetService("CoreGui") 
     
     local antiAfkConnection
     local autoRejoinActivo = false
@@ -78,33 +79,35 @@ if gameName == "Sailor Piece" then
         end
     })
 
-    -- Lógica del Auto Rejoin (Blindada)
-    pcall(function()
-        local promptOverlay = RobloxGUI:WaitForChild("RobloxPromptGui"):WaitForChild("promptOverlay")
-        
-        promptOverlay.ChildAdded:Connect(function(child)
-            if child.Name == "ErrorPrompt" and autoRejoinActivo then
-                
-                -- TRUCO VISUAL: Cambia el cartel de Roblox
-                pcall(function()
-                    child.MessageArea.ErrorFrame.ErrorMessage.Text = "SAPO Hub: Desconexión detectada. Reconectando al servidor en 3 segundos..."
-                end)
-                
-                task.wait(3)
-                
-                pcall(function()
-                    if game.JobId ~= "" then
-                        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Players.LocalPlayer)
-                    else
+    -- Lógica del Auto Rejoin (Corregida)
+    task.spawn(function()
+        pcall(function()
+            local promptOverlay = CoreGui:WaitForChild("RobloxPromptGui"):WaitForChild("promptOverlay")
+            
+            promptOverlay.ChildAdded:Connect(function(child)
+                if child.Name == "ErrorPrompt" and autoRejoinActivo then
+                    
+                    -- TRUCO VISUAL: Cambia el cartel de Roblox
+                    pcall(function()
+                        child.MessageArea.ErrorFrame.ErrorMessage.Text = "SAPO Hub: Desconexión detectada. Reconectando al servidor en 3 segundos..."
+                    end)
+                    
+                    task.wait(3)
+                    
+                    pcall(function()
+                        if game.JobId ~= "" then
+                            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Players.LocalPlayer)
+                        else
+                            TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
+                        end
+                    end)
+                    
+                    task.wait(2)
+                    pcall(function()
                         TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
-                    end
-                end)
-                
-                task.wait(2)
-                pcall(function()
-                    TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
-                end)
-            end
+                    end)
+                end
+            end)
         end)
     end)
 
@@ -119,7 +122,7 @@ if gameName == "Sailor Piece" then
                     queueFunction([[
                         if not game:IsLoaded() then game.Loaded:Wait() end
                         task.wait(2)
-                        loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/IDK/refs/heads/main/SAPO.lua"))()
+                        loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/SAPO/refs/heads/master/SAPO.lua"))()
                     ]])
                 else
                     Fluent:Notify({ Title = "Error", Content = "Tu ejecutor no soporta AutoExecute", Duration = 5 })
