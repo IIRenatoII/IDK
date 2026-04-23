@@ -162,7 +162,7 @@ if gameName == "Sailor Piece" then
     })
 
     local killAuraActive = false
-    local auraRadius = 100 -- Distancia máxima de ataque (Studs)
+    local auraRadius = 25 -- Distancia máxima de ataque (Studs)
 
     Tabs.Main:AddToggle("KillAura", {
         Title = "Kill aura",
@@ -171,52 +171,65 @@ if gameName == "Sailor Piece" then
             killAuraActive = state
             
             if state then
+                print("--- Kill Aura ACTIVADO ---")
                 task.spawn(function()
                     while killAuraActive do
-                        task.wait(0.1) -- Velocidad a la que hace los "clics" de ataque
+                        task.wait(0.5) -- Lo puse un poco más lento (0.5s) para no saturar la consola de texto
                         
-                        -- Usamos pcall para evitar que el bucle se rompa si mueres o el juego se lagea
                         pcall(function()
                             local character = Players.LocalPlayer.Character
                             local npcsFolder = workspace:FindFirstChild("NPCs")
                             
-                            -- Verificamos que tu personaje y la carpeta de NPCs existan
-                            if character and character:FindFirstChild("HumanoidRootPart") and npcsFolder then
+                            -- 1. Verificar si la carpeta existe
+                            if not npcsFolder then
+                                print("ERROR: No encuentro la carpeta 'NPCs' en el Workspace.")
+                                return
+                            end
+                            
+                            if character and character:FindFirstChild("HumanoidRootPart") then
                                 local myPos = character.HumanoidRootPart.Position
+                                local tool = character:FindFirstChildOfClass("Tool")
                                 
-                                -- Revisamos uno por uno a los monstruos dentro de la carpeta NPCs
+                                -- 2. Verificar si tienes un arma en la mano
+                                if not tool then
+                                    print("AVISO: No tienes ningún arma equipada en la mano.")
+                                end
+                                
+                                -- 3. Buscar enemigos
+                                local foundEnemy = false
                                 for _, enemy in pairs(npcsFolder:GetChildren()) do
-                                    
-                                    -- Comprobamos que el enemigo tenga cuerpo y vida
                                     if enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("HumanoidRootPart") then
                                         if enemy.Humanoid.Health > 0 then
-                                            
                                             local enemyPos = enemy.HumanoidRootPart.Position
                                             local distance = (myPos - enemyPos).Magnitude
                                             
-                                            -- Si la distancia es menor o igual a nuestro radio (25 studs)
+                                            -- 4. Verificar distancia
                                             if distance <= auraRadius then
+                                                foundEnemy = true
+                                                print("ENEMIGO EN RANGO! Distancia:", math.floor(distance), " studs. Objetivo:", enemy.Name)
                                                 
-                                                -- Buscamos si tienes un arma (Tool) equipada en la mano y la activamos
-                                                local tool = character:FindFirstChildOfClass("Tool")
                                                 if tool then
                                                     tool:Activate()
+                                                    print("-> Intentando atacar con:", tool.Name)
                                                 end
-                                                
-                                                -- (Opcional) Forzamos a tu personaje a mirar hacia el enemigo
-                                                -- character:SetPrimaryPartCFrame(CFrame.lookAt(myPos, Vector3.new(enemyPos.X, myPos.Y, enemyPos.Z)))
                                             end
                                         end
                                     end
+                                end
+                                
+                                if not foundEnemy then
+                                    print("Buscando... No hay enemigos a menos de 25 studs.")
                                 end
                             end
                         end)
                     end
                 end)
+            else
+                print("--- Kill Aura APAGADO ---")
             end
         end
     })
-
+    
     Tabs.Main:AddToggle("InstaKillBosses", {
         Title = "Insta Kill (Bosses)",
         Default = false,
