@@ -17,7 +17,7 @@ if not gameName then
 end
 
 -- ==========================================
--- 2. CARGA DE LIBRERÍAS (ENLACES ACTUALIZADOS)
+-- 2. CARGA DE LIBRERÍAS
 -- ==========================================
 local Fluent = loadstring(game:HttpGet("https://github.com/IIRenatoII/IDK/releases/download/SAPO/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/IDK/refs/heads/main/Addons/SaveManager.lua"))()
@@ -44,9 +44,13 @@ local Options = Fluent.Options
 -- ==========================================
 -- 4. CREACIÓN DE PESTAÑAS (ORDEN VISUAL)
 -- ==========================================
+-- El orden en el que se declaran aquí es el orden en el que aparecen de arriba a abajo.
 if gameName == "Sailor Piece" then
-    Tabs.Main = Window:AddTab({ Title = "Farm", Icon = "sword" })
+    Tabs.Info = Window:AddTab({ Title = "Info", Icon = "info" })
+    Tabs.Farm = Window:AddTab({ Title = "Farm", Icon = "sword" })
+    Tabs.Reset = Window:AddTab({ Title = "Reset", Icon = "timer" })
 elseif gameName == "Pixel Blade" then
+    Tabs.Info = Window:AddTab({ Title = "Info", Icon = "info" })
     Tabs.Main = Window:AddTab({ Title = "Main", Icon = "swords" })
     Tabs.Eggs = Window:AddTab({ Title = "Pets/Eggs", Icon = "box" })
 end
@@ -67,7 +71,7 @@ if gameName == "Sailor Piece" then
     local antiAfkConnection
     local autoRejoinActivo = false
     
-    -- === AJUSTES DE SAILOR PIECE ===
+    -- === PESTAÑA: SETTINGS (Funciones del Juego) ===
     Tabs.Settings:AddSection("Game Features")
     
     Tabs.Settings:AddToggle("AutoRejoin", {
@@ -154,30 +158,33 @@ if gameName == "Sailor Piece" then
         end
     })
 
-    -- === CONTENIDO DE LA PESTAÑA MAIN ===
-    local InfoSection = Tabs.Main:AddSection("Información")
-    
-    Tabs.Main:AddParagraph({
+    -- === PESTAÑA: INFO ===
+    Tabs.Info:AddParagraph({
         Title = "Versión del Script",
         Content = "v1.2"
     })
 
-    local MainSection = Tabs.Main:AddSection("Auto Farm")
+    -- === PESTAÑA: FARM ===
+    Tabs.Farm:AddToggle("InstaKillBosses", {
+        Title = "Insta Kill (Bosses)",
+        Default = false,
+        Callback = function(state)
+            print("Insta Kill (Bosses) está: ", state)
+        end
+    })
     
-    -- Variables para el Auto Reset
+    -- === PESTAÑA: RESET ===
     local autoResetEnabled = false
     local maxResetTime = 20
     local currentResetTime = 20
     local lastPosition = nil
     
-    -- 1. Párrafo que mostrará la cuenta regresiva (Corregido)
-    local CountdownDisplay = Tabs.Main:AddParagraph({
+    local CountdownDisplay = Tabs.Reset:AddParagraph({
         Title = "Estado del Auto Reset",
         Content = "Apagado"
     })
     
-    -- 2. Toggle del Auto Reset
-    local AutoResetToggle = Tabs.Main:AddToggle("AutoReset", {
+    local AutoResetToggle = Tabs.Reset:AddToggle("AutoReset", {
         Title = "Auto Reset (Anti-Stuck)",
         Default = false,
         Callback = function(state)
@@ -240,8 +247,7 @@ if gameName == "Sailor Piece" then
         end
     })
     
-    -- 3. Slider para elegir el tiempo dinámico
-    Tabs.Main:AddSlider("AutoResetTime", {
+    Tabs.Reset:AddSlider("AutoResetTime", {
         Title = "Tiempo para Reset",
         Description = "Segundos sin moverse para ejecutar el reset",
         Default = 20,
@@ -256,15 +262,12 @@ if gameName == "Sailor Piece" then
         end
     })
 
-    Tabs.Main:AddToggle("InstaKillBosses", {
-        Title = "Insta Kill (Bosses)",
-        Default = false,
-        Callback = function(state)
-            print("Insta Kill (Bosses) está: ", state)
-        end
+elseif gameName == "Pixel Blade" then
+    Tabs.Info:AddParagraph({
+        Title = "Versión del Script",
+        Content = "v1.2"
     })
 
-elseif gameName == "Pixel Blade" then
     local MainSection = Tabs.Main:AddSection("Combat")
 
     Tabs.Main:AddToggle("AutoSwing", {
