@@ -162,7 +162,7 @@ if gameName == "Sailor Piece" then
     })
 
     local killAuraActive = false
-    local auraRadius = 25 -- Distancia máxima de ataque (Studs)
+    local auraRadius = 50
 
     Tabs.Main:AddToggle("KillAura", {
         Title = "Kill aura",
@@ -171,61 +171,45 @@ if gameName == "Sailor Piece" then
             killAuraActive = state
             
             if state then
-                print("--- Kill Aura ACTIVADO ---")
                 task.spawn(function()
                     while killAuraActive do
-                        task.wait(0.5) -- Lo puse un poco más lento (0.5s) para no saturar la consola de texto
+                        task.wait(0.1) -- Velocidad de los golpes (0.2s es seguro para que el juego no te patee por spam)
                         
                         pcall(function()
                             local character = Players.LocalPlayer.Character
                             local npcsFolder = workspace:FindFirstChild("NPCs")
                             
-                            -- 1. Verificar si la carpeta existe
-                            if not npcsFolder then
-                                print("ERROR: No encuentro la carpeta 'NPCs' en el Workspace.")
-                                return
-                            end
-                            
-                            if character and character:FindFirstChild("HumanoidRootPart") then
-                                local myPos = character.HumanoidRootPart.Position
+                            if character and character:FindFirstChild("HumanoidRootPart") and npcsFolder then
+                                local myRoot = character.HumanoidRootPart
+                                local myPos = myRoot.Position
                                 local tool = character:FindFirstChildOfClass("Tool")
                                 
-                                -- 2. Verificar si tienes un arma en la mano
-                                if not tool then
-                                    print("AVISO: No tienes ningún arma equipada en la mano.")
-                                end
-                                
-                                -- 3. Buscar enemigos
-                                local foundEnemy = false
                                 for _, enemy in pairs(npcsFolder:GetChildren()) do
                                     if enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("HumanoidRootPart") then
                                         if enemy.Humanoid.Health > 0 then
                                             local enemyPos = enemy.HumanoidRootPart.Position
                                             local distance = (myPos - enemyPos).Magnitude
                                             
-                                            -- 4. Verificar distancia
                                             if distance <= auraRadius then
-                                                foundEnemy = true
-                                                print("ENEMIGO EN RANGO! Distancia:", math.floor(distance), " studs. Objetivo:", enemy.Name)
-                                                
                                                 if tool then
+                                                    -- 1. Forzamos a tu personaje a mirar exactamente hacia el enemigo
+                                                    myRoot.CFrame = CFrame.lookAt(myPos, Vector3.new(enemyPos.X, myPos.Y, enemyPos.Z))
+                                                    
+                                                    -- 2. Hacemos el Activate normal por si acaso
                                                     tool:Activate()
-                                                    print("-> Intentando atacar con:", tool.Name)
+                                                    
+                                                    -- 3. Simulamos un clic izquierdo real del hardware
+                                                    VirtualUser:CaptureController()
+                                                    VirtualUser:ClickButton1(Vector2.new())
                                                 end
                                             end
                                         end
                                     end
                                 end
-                                
-                                if not foundEnemy then
-                                    print("Buscando... No hay enemigos a menos de 25 studs.")
-                                end
                             end
                         end)
                     end
                 end)
-            else
-                print("--- Kill Aura APAGADO ---")
             end
         end
     })
