@@ -18,9 +18,9 @@ end
 -- ==========================================
 -- 2. CARGA DE LIBRERÍAS
 -- ==========================================
-local Fluent = loadstring(game:HttpGet("https://github.com/IIRenatoII/SAPO/releases/download/SAPO/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/SAPO/refs/heads/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/SAPO/refs/heads/master/Addons/InterfaceManager.lua"))()
+local Fluent = loadstring(game:HttpGet("https://github.com/IIRenatoII/IDK/releases/download/SAPO/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/IDK/refs/heads/main/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/IDK/refs/heads/main/Addons/InterfaceManager.lua"))()
 
 -- ==========================================
 -- 3. CREACIÓN DE LA VENTANA PRINCIPAL
@@ -129,7 +129,7 @@ if gameName == "Sailor Piece" then
                     queueFunction([[
                         if not game:IsLoaded() then game.Loaded:Wait() end
                         task.wait(2)
-                        loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/SAPO/refs/heads/master/SAPO.lua"))()
+                        loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/IDK/refs/heads/main/SAPO.lua"))()
                     ]])
                 else
                     Fluent:Notify({ Title = "Error", Content = "Tu ejecutor no soporta AutoExecute", Duration = 5 })
