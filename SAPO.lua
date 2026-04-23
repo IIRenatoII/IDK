@@ -170,6 +170,13 @@ if gameName == "Sailor Piece" then
     local currentResetTime = 20
     local lastPosition = nil
     
+    -- 1. Párrafo que mostrará la cuenta regresiva (Corregido)
+    local CountdownDisplay = Tabs.Main:AddParagraph({
+        Title = "Estado del Auto Reset",
+        Content = "Apagado"
+    })
+    
+    -- 2. Toggle del Auto Reset
     local AutoResetToggle = Tabs.Main:AddToggle("AutoReset", {
         Title = "Auto Reset (Anti-Stuck)",
         Default = false,
@@ -207,11 +214,11 @@ if gameName == "Sailor Piece" then
                                 end
                                 
                                 -- Actualizamos la UI en tiempo real
-                                Options.CountdownDisplay:SetDesc("Tiempo restante: " .. tostring(currentResetTime) .. "s")
+                                CountdownDisplay:SetDesc("Tiempo restante: " .. tostring(currentResetTime) .. "s")
                                 
                                 -- Ejecutamos el Reset si el tiempo llega a 0
                                 if currentResetTime <= 0 then
-                                    Options.CountdownDisplay:SetDesc("Reseteando personaje...")
+                                    CountdownDisplay:SetDesc("Reseteando personaje...")
                                     humanoid.Health = 0 -- Mata al personaje para resetearlo
                                     currentResetTime = maxResetTime
                                     lastPosition = nil
@@ -220,26 +227,20 @@ if gameName == "Sailor Piece" then
                                 -- Si el personaje está muerto o cargando, pausamos el contador
                                 currentResetTime = maxResetTime
                                 lastPosition = nil
-                                Options.CountdownDisplay:SetDesc("Esperando a reaparecer...")
+                                CountdownDisplay:SetDesc("Esperando a reaparecer...")
                             end
                         end)
                     end
                     -- Texto cuando se apaga el toggle
-                    Options.CountdownDisplay:SetDesc("Apagado")
+                    CountdownDisplay:SetDesc("Apagado")
                 end)
             else
-                Options.CountdownDisplay:SetDesc("Apagado")
+                CountdownDisplay:SetDesc("Apagado")
             end
         end
     })
     
-    -- Párrafo que mostrará la cuenta regresiva en vivo
-    Tabs.Main:AddParagraph("CountdownDisplay", {
-        Title = "Estado del Auto Reset",
-        Content = "Apagado"
-    })
-    
-    -- Slider para elegir el tiempo dinámico
+    -- 3. Slider para elegir el tiempo dinámico
     Tabs.Main:AddSlider("AutoResetTime", {
         Title = "Tiempo para Reset",
         Description = "Segundos sin moverse para ejecutar el reset",
