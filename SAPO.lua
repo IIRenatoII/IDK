@@ -161,7 +161,7 @@ if gameName == "Sailor Piece" then
     
     Tabs.Main:AddParagraph({
         Title = "Versión del Script",
-        Content = "v1.1"
+        Content = "v1.2"
     })
 
     local MainSection = Tabs.Main:AddSection("Auto Farm")
@@ -170,14 +170,12 @@ if gameName == "Sailor Piece" then
         Title = "Auto Farm Mobs",
         Default = false,
         Callback = function(state)
-            print("Auto Farm está: ", state)
         end
     })
 
     Tabs.Main:AddButton({
         Title = "Teleport to Safe Zone",
         Callback = function()
-            print("Teletransportando...")
         end
     })
 
