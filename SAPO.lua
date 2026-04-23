@@ -18,9 +18,9 @@ end
 -- ==========================================
 -- 2. CARGA DE LIBRERÍAS
 -- ==========================================
-local Fluent = loadstring(game:HttpGet("https://github.com/IIRenatoII/SAPO/releases/download/SAPO/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/SAPO/refs/heads/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/SAPO/refs/heads/master/Addons/InterfaceManager.lua"))()
+local Fluent = loadstring(game:HttpGet("https://github.com/IIRenatoII/IDK/releases/download/SAPO/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/IDK/refs/heads/main/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/IDK/refs/heads/main/Addons/InterfaceManager.lua"))()
 
 -- ==========================================
 -- 3. CREACIÓN DE LA VENTANA PRINCIPAL
@@ -66,12 +66,13 @@ if gameName == "Sailor Piece" then
     local Players = game:GetService("Players")
     local antiAfkConnection -- Guardamos la conexión para poder apagarla
 
-    local TeleportService = game:GetService("TeleportService")
-    local CoreGui = game:GetService("CoreGui")
-    local autoRejoinActivo = false
-    
     -- === AJUSTES DE SAILOR PIECE (Se pondrán AL INICIO de Settings) ===
     Tabs.Settings:AddSection("Game Features")
+    
+    local TeleportService = game:GetService("TeleportService")
+    -- Utilizamos gethui() por si tu ejecutor esconde la interfaz de Roblox
+    local RobloxGUI = gethui and gethui() or game:GetService("CoreGui")
+    local autoRejoinActivo = false
     
     Tabs.Settings:AddToggle("AutoRejoin", {
         Title = "Auto Rejoin if Kick", 
@@ -80,19 +81,39 @@ if gameName == "Sailor Piece" then
             autoRejoinActivo = state
         end
     })
-    -- Este código se queda vigilando la pantalla de forma invisible
-    CoreGui.RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(child)
-        -- Si detecta el cartel de error y el toggle está prendido...
-        if child.Name == "ErrorPrompt" and autoRejoinActivo then
-            -- Esperamos 2.5 segundos para que el servidor procese la desconexión
-            task.wait(2.5)
-            
-            -- Usamos pcall para que, si falla, el script no se rompa
-            pcall(function()
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Players.LocalPlayer)
-            end)
-        end
+
+    -- Envolvemos en pcall para evitar crasheos si el ejecutor tiene seguridad extrema
+    pcall(function()
+        local promptOverlay = RobloxGUI:WaitForChild("RobloxPromptGui"):WaitForChild("promptOverlay")
+        
+        promptOverlay.ChildAdded:Connect(function(child)
+            if child.Name == "ErrorPrompt" and autoRejoinActivo then
+                
+                -- TRUCO VISUAL: Cambiamos el texto del cartel para confirmar que SAPO lo detectó
+                pcall(function()
+                    child.MessageArea.ErrorFrame.ErrorMessage.Text = "SAPO: Desconexión detectada. Reconectando al servidor en 3 segundos..."
+                end)
+                
+                task.wait(3)
+                
+                -- Intentamos reconectar al mismo servidor (JobId)
+                pcall(function()
+                    if game.JobId ~= "" then
+                        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Players.LocalPlayer)
+                    else
+                        TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
+                    end
+                end)
+                
+                -- Plan B: Si falla porque es un server VIP muy estricto, forzamos un Teleport general 2 segundos después
+                task.wait(2)
+                pcall(function()
+                    TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
+                end)
+            end
+        end)
     end)
+    
     Tabs.Settings:AddToggle("AutoExecute", {
         Title = "Auto Execute", 
         Default = false,
@@ -107,7 +128,7 @@ if gameName == "Sailor Piece" then
                         task.wait(2)
                         
                         -- Aquí va el loadstring de tu script principal:
-                        loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/SAPO/refs/heads/master/SAPO.lua"))()
+                        loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/IDK/refs/heads/main/SAPO.lua"))()
                     ]])
                 else
                     Fluent:Notify({
@@ -119,6 +140,7 @@ if gameName == "Sailor Piece" then
             end
         end
     })
+    
     Tabs.Settings:AddToggle("AntiAfk", {
         Title = "Anti-Afk", 
         Default = false,
@@ -145,8 +167,7 @@ if gameName == "Sailor Piece" then
     local InfoSection = Tabs.Main:AddSection("Información")
     
     Tabs.Main:AddParagraph({
-        Title = "Versión del Script",
-        Content = "v1.1"
+        Title = "🐸 v1.1 🐸",
     })
 
     -- Sección de farmeo
@@ -156,14 +177,12 @@ if gameName == "Sailor Piece" then
         Title = "Auto Farm Mobs",
         Default = false,
         Callback = function(state)
-            print("Auto Farm está: ", state)
         end
     })
 
     Tabs.Main:AddButton({
         Title = "Teleport to Safe Zone",
         Callback = function()
-            print("Teletransportando...")
         end
     })
 
