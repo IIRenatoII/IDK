@@ -4,7 +4,8 @@
 local placeId = game.PlaceId
 
 local supportedGames = {
-    [77747658251236] = "Sailor Piece",
+    [77747658251236] = "Sailor Piece", -- Sea 1
+    [130167267952199] = "Sailor Piece", -- Sea 2
     [18172550962] = "Pixel Blade",
 }
 
@@ -269,6 +270,7 @@ elseif gameName == "Pixel Blade" then
         Title = "Auto Swing Weapon", 
         Default = false,
         Callback = function(state)
+            print("Auto Swing está: ", state)
         end
     })
     
