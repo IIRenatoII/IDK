@@ -162,7 +162,8 @@ if gameName == "Sailor Piece" then
     })
 
     local killAuraActive = false
-    local auraRadius = 50
+    local auraRadius = 25
+    local VirtualInputManager = game:GetService("VirtualInputManager")
 
     Tabs.Main:AddToggle("KillAura", {
         Title = "Kill aura",
@@ -173,7 +174,7 @@ if gameName == "Sailor Piece" then
             if state then
                 task.spawn(function()
                     while killAuraActive do
-                        task.wait(0.1) -- Velocidad de los golpes (0.2s es seguro para que el juego no te patee por spam)
+                        task.wait(0.1) -- Velocidad del combo (0.1s es perfecto)
                         
                         pcall(function()
                             local character = Players.LocalPlayer.Character
@@ -184,27 +185,38 @@ if gameName == "Sailor Piece" then
                                 local myPos = myRoot.Position
                                 local tool = character:FindFirstChildOfClass("Tool")
                                 
+                                local closestEnemy = nil
+                                local shortestDistance = auraRadius
+                                
+                                -- 1. Buscamos al enemigo MÁS CERCANO dentro del radio
                                 for _, enemy in pairs(npcsFolder:GetChildren()) do
                                     if enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("HumanoidRootPart") then
                                         if enemy.Humanoid.Health > 0 then
-                                            local enemyPos = enemy.HumanoidRootPart.Position
-                                            local distance = (myPos - enemyPos).Magnitude
+                                            local distance = (myPos - enemy.HumanoidRootPart.Position).Magnitude
                                             
-                                            if distance <= auraRadius then
-                                                if tool then
-                                                    -- 1. Forzamos a tu personaje a mirar exactamente hacia el enemigo
-                                                    myRoot.CFrame = CFrame.lookAt(myPos, Vector3.new(enemyPos.X, myPos.Y, enemyPos.Z))
-                                                    
-                                                    -- 2. Hacemos el Activate normal por si acaso
-                                                    tool:Activate()
-                                                    
-                                                    -- 3. Simulamos un clic izquierdo real del hardware
-                                                    VirtualUser:CaptureController()
-                                                    VirtualUser:ClickButton1(Vector2.new())
-                                                end
+                                            if distance <= shortestDistance then
+                                                shortestDistance = distance
+                                                closestEnemy = enemy
                                             end
                                         end
                                     end
+                                end
+                                
+                                -- 2. Si encontramos a alguien cerca y tenemos un arma equipada...
+                                if closestEnemy and tool then
+                                    local enemyPos = closestEnemy.HumanoidRootPart.Position
+                                    
+                                    -- Miramos fijamente al objetivo
+                                    myRoot.CFrame = CFrame.lookAt(myPos, Vector3.new(enemyPos.X, myPos.Y, enemyPos.Z))
+                                    
+                                    -- Activación normal
+                                    tool:Activate()
+                                    
+                                    -- Simulación de hardware (Clic izquierdo real de PC)
+                                    -- Esto fuerza al juego a registrar el golpe sí o sí
+                                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+                                    task.wait(0.05) -- Mantenemos el clic 0.05 segundos para que registre
+                                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
                                 end
                             end
                         end)
