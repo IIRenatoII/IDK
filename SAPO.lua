@@ -16,7 +16,7 @@ if not gameName then
 end
 
 -- ==========================================
--- 2. CARGA DE LIBRERÍAS
+-- 2. CARGA DE LIBRERÍAS (ENLACES ACTUALIZADOS)
 -- ==========================================
 local Fluent = loadstring(game:HttpGet("https://github.com/IIRenatoII/IDK/releases/download/SAPO/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/IIRenatoII/IDK/refs/heads/main/Addons/SaveManager.lua"))()
@@ -27,7 +27,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 -- ==========================================
 local Window = Fluent:CreateWindow({
     Title = "SAPO | " .. gameName,
-    SubTitle = "by sapo",
+    SubTitle = "💤",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
     Theme = "AMOLED",
@@ -45,7 +45,6 @@ local Options = Fluent.Options
 -- ==========================================
 if gameName == "Sailor Piece" then
     Tabs.Main = Window:AddTab({ Title = "Farm", Icon = "sword" })
-    Tabs.Stats = Window:AddTab({ Title = "Stats", Icon = "trending-up" })
 elseif gameName == "Pixel Blade" then
     Tabs.Main = Window:AddTab({ Title = "Main", Icon = "swords" })
     Tabs.Eggs = Window:AddTab({ Title = "Pets/Eggs", Icon = "box" })
@@ -96,12 +95,10 @@ if gameName == "Sailor Piece" then
     task.spawn(function()
         pcall(function()
             local CoreGui = game:GetService("CoreGui")
-            -- Si el ejecutor te manda a la carpeta secreta HUI, buscamos el CoreGui real
             if CoreGui.Name ~= "CoreGui" and CoreGui.Parent and CoreGui.Parent.Name == "CoreGui" then
                 CoreGui = CoreGui.Parent
             end
 
-            -- Se agregó un límite estricto de 2 segundos para evitar el Infinite Yield
             local robloxPrompt = CoreGui:WaitForChild("RobloxPromptGui", 2)
             if robloxPrompt then
                 local promptOverlay = robloxPrompt:WaitForChild("promptOverlay", 2)
@@ -109,7 +106,7 @@ if gameName == "Sailor Piece" then
                     promptOverlay.ChildAdded:Connect(function(child)
                         if child.Name == "ErrorPrompt" and autoRejoinActivo then
                             pcall(function()
-                                child.MessageArea.ErrorFrame.ErrorMessage.Text = "SAPO Hub: Desconexión detectada. Reconectando al servidor..."
+                                child.MessageArea.ErrorFrame.ErrorMessage.Text = "SAPO: Desconexión detectada. Reconectando al servidor..."
                             end)
                         end
                     end)
@@ -161,21 +158,24 @@ if gameName == "Sailor Piece" then
     
     Tabs.Main:AddParagraph({
         Title = "Versión del Script",
-        Content = "v1.2"
+        Content = "v1.1"
     })
 
     local MainSection = Tabs.Main:AddSection("Auto Farm")
     
-    Tabs.Main:AddToggle("AutoFarmSailor", {
-        Title = "Auto Farm Mobs",
+    Tabs.Main:AddToggle("KillAura", {
+        Title = "Kill aura",
         Default = false,
         Callback = function(state)
+            print("Kill aura está: ", state)
         end
     })
 
-    Tabs.Main:AddButton({
-        Title = "Teleport to Safe Zone",
-        Callback = function()
+    Tabs.Main:AddToggle("InstaKillBosses", {
+        Title = "Insta Kill (Bosses)",
+        Default = false,
+        Callback = function(state)
+            print("Insta Kill (Bosses) está: ", state)
         end
     })
 
